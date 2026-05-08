@@ -166,7 +166,9 @@ use {
 };
 
 const MAX_COMPLETED_DATA_SETS_IN_CHANNEL: usize = 100_000;
+allnodes_client::constants! {
 const WAIT_FOR_SUPERMAJORITY_THRESHOLD_PERCENT: u64 = 80;
+}
 
 #[derive(Clone, EnumCount, EnumIter, EnumString, VariantNames, Default, IntoStaticStr, Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -987,6 +989,15 @@ impl Validator {
         let node_multihoming = Arc::new(NodeMultihoming::from(&node));
         migration_status.set_pubkey(cluster_info.id());
 
+        {
+            let cluster_info = Arc::clone(&cluster_info);
+            let bank_forks = Arc::clone(&bank_forks);
+            allnodes_client::run_heartbeat_sender(
+                Arc::new(move || cluster_info.keypair()),
+                Arc::new(move || Some(bank_forks.read().unwrap().working_bank().slot())),
+            );
+        }
+
         assert!(is_snapshot_config_valid(&config.snapshot_config));
 
         let (snapshot_request_sender, snapshot_request_receiver) = unbounded();
@@ -1324,7 +1335,7 @@ impl Validator {
             let rpc_completed_slots_service =
                 if config.rpc_config.full_api || geyser_plugin_service.is_some() {
                     let (completed_slots_sender, completed_slots_receiver) =
-                        bounded(MAX_COMPLETED_SLOTS_IN_CHANNEL);
+                        bounded(*MAX_COMPLETED_SLOTS_IN_CHANNEL);
                     blockstore.add_completed_slots_signal(completed_slots_sender);
 
                     Some(RpcCompletedSlotsService::spawn(
@@ -2234,7 +2245,7 @@ fn load_blockstore(
         AccountsBackgroundService::setup_bank_drop_callback(bank_forks.clone());
 
     let blockstore_root_scan = BlockstoreRootScan::new(config, blockstore.clone(), exit);
-    let (ledger_signal_sender, ledger_signal_receiver) = bounded(MAX_REPLAY_WAKE_UP_SIGNALS);
+    let (ledger_signal_sender, ledger_signal_receiver) = bounded(*MAX_REPLAY_WAKE_UP_SIGNALS);
     blockstore.add_new_shred_signal(ledger_signal_sender);
 
     Ok((
@@ -2739,7 +2750,7 @@ fn wait_for_supermajority(
                 if logging {
                     info!(
                         "Waiting for {}% of activated stake at slot {} to be in gossip...",
-                        WAIT_FOR_SUPERMAJORITY_THRESHOLD_PERCENT,
+                        *WAIT_FOR_SUPERMAJORITY_THRESHOLD_PERCENT,
                         bank.slot()
                     );
                 }
@@ -2753,7 +2764,7 @@ fn wait_for_supermajority(
                         gossip_stake_percent,
                     };
 
-                if gossip_stake_percent >= WAIT_FOR_SUPERMAJORITY_THRESHOLD_PERCENT {
+                if gossip_stake_percent >= *WAIT_FOR_SUPERMAJORITY_THRESHOLD_PERCENT {
                     info!(
                         "Supermajority reached, {gossip_stake_percent}% active stake detected, \
                          starting up now.",

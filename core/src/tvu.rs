@@ -300,7 +300,7 @@ impl Tvu {
                     qos_config,
                     cancel,
                 )
-                .unwrap()
+                    .unwrap()
             };
 
             // sigverifier
@@ -857,7 +857,7 @@ pub mod tests {
                 reward_certs_sender,
             },
         )
-        .expect("assume success");
+            .expect("assume success");
         exit.store(true, Ordering::Relaxed);
         tvu.join().unwrap();
         poh_service.join().unwrap();
