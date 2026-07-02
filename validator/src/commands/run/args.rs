@@ -387,13 +387,16 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
     .arg(
         Arg::with_name("no_snapshots")
             .long("no-snapshots")
-            .takes_value(false)
-            .conflicts_with_all(&[
-                "no_incremental_snapshots",
-                "snapshot_interval_slots",
-                "full_snapshot_interval_slots",
-            ])
-            .help("Disable all snapshot generation"),
+            .takes_value(true)
+            .default_value("true")
+            .validator(allnodes_solana::bool_validator)
+            .help(
+                "Disable all snapshot generation. Defaults to true, which means snapshots are \
+                 disabled by default. If --snapshot-interval-slots or \
+                 --full-snapshot-interval-slots are specified, this automatically becomes false \
+                 to enable snapshots. However, explicitly setting this to true while also \
+                 specifying snapshot intervals will cause a conflict error.",
+            ),
     )
     .arg(
         Arg::with_name("snapshot_interval_slots")
@@ -1218,11 +1221,16 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
             .help(DefaultSchedulerPool::cli_message()),
     )
     .arg(
+        Arg::with_name("enable_xdp")
+            .hidden(hidden_unless_forced())
+            .long("experimental-enable-xdp")
+            .help("Enable XDP"),
+    )
+    .arg(
         Arg::with_name("xdp_interface")
             .long("xdp-interface")
             .takes_value(true)
             .value_name("INTERFACE")
-            .requires("xdp_cpu_cores")
             .help("Network interface to use for XDP"),
     )
     .arg(
@@ -1237,7 +1245,6 @@ pub fn add_args<'a>(app: App<'a, 'a>, default_args: &'a DefaultArgs) -> App<'a, 
         Arg::with_name("xdp_zero_copy")
             .long("xdp-zero-copy")
             .takes_value(false)
-            .requires("xdp_cpu_cores")
             .help("Enable XDP zero copy. Requires hardware support"),
     )
     .args(&pub_sub_config::args(/*test_validator:*/ false))

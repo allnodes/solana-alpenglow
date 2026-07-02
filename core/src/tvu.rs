@@ -314,7 +314,7 @@ impl Tvu {
                     qos_config,
                     cancel,
                 )
-                .unwrap()
+                    .unwrap()
             };
 
             // sigverifier
@@ -415,7 +415,7 @@ impl Tvu {
 
         // Create completed slots channel for BlockIdRepairService
         let (completed_slots_sender, completed_slots_receiver) =
-            bounded(MAX_COMPLETED_SLOTS_IN_CHANNEL);
+            bounded(*MAX_COMPLETED_SLOTS_IN_CHANNEL);
         blockstore.add_completed_slots_signal(completed_slots_sender);
 
         let block_id_repair_channels = BlockIdRepairChannels {
@@ -902,7 +902,7 @@ pub mod tests {
             },
             reward_votes_sender,
         )
-        .expect("assume success");
+            .expect("assume success");
         exit.store(true, Ordering::Relaxed);
         tvu.join().unwrap();
         poh_service.join().unwrap();
